@@ -1,10 +1,11 @@
 {
   "name": "auto-funder",
   "version": "0.0.1",
-  "description": "Aeternity auto funder service based on queue.",
+  "description": "Aeternity auto-funder service based on queue.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node index.js",
+    "test": "FUNDERS=bb9f0b01c8c9553cfbaf7ef81a50f977b1326801ebf7294d1c2cbccdedf27476e9bbf604e611b5460a3b3999e9771b6f60417d73ce7c5519e12f7e127a1225ca:58bd39ded1e3907f0b9c1fbaa4456493519995d524d168e0b04e86400f4aa13937bcec56026494dcf9b19061559255d78deea3281ac649ca307ead34346fa621 ./node_modules/mocha/bin/mocha --timeout 20000"
   },
   "repository": {
     "type": "git",
@@ -15,5 +16,20 @@
   "bugs": {
     "url": "https://github.com/AMPnet/auto-funder/issues"
   },
-  "homepage": "https://github.com/AMPnet/auto-funder#readme"
+  "homepage": "https://github.com/AMPnet/auto-funder#readme",
+  "dependencies": {
+    "@aeternity/aepp-sdk": "^7.7.0",
+    "express": "^4.17.1",
+    "express-actuator": "^1.7.0",
+    "from-exponential": "^1.0.0",
+    "pg-boss": "^5.0.8",
+    "prom-client": "^12.0.0",
+    "winston": "^3.3.3",
+    "winston-daily-rotate-file": "^4.5.0"
+  },
+  "devDependencies": {
+    "axios": "^0.21.0",
+    "chai": "^4.2.0",
+    "mocha": "^8.2.1"
+  }
 }
