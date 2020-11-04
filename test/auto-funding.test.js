@@ -31,6 +31,7 @@ describe('Auto funding test', function() {
         let aeClient = await getAeClient()
 
         await queue.start()
+        await queue.clearStorage()
         
         queue.publish(queueName, {
             wallets: [ wallet1.publicKey, wallet2.publicKey ]

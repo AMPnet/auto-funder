@@ -1,6 +1,6 @@
 {
   "name": "auto-funder",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Aeternity auto-funder service based on queue.",
   "main": "index.js",
   "scripts": {

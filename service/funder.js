@@ -88,47 +88,12 @@ async function handleJob(client, job, workerId) {
         return
     }
 
-    let senderAddress = await client.address()
-    logger.info(`WORKER-${workerId}: Sending ${amount} aettos to ${wallets.length} wallet(s) from wallet ${senderAddress}`)
+    logger.info(`WORKER-${workerId}: Sending ${config.gift_amount} AE to wallets ${wallets}.`)
 
-    let senderBalance = await client.getBalance(senderAddress)
-    logger.info(`WORKER-${workerId}: Sender balance ${senderBalance}`)
-
-    let nonce = await client.getAccountNonce(senderAddress)
-    logger.info(`WORKER-${workerId}: Sender nonce ${nonce}`)
-    
-    let transactions = []
-    let totalCost = 0
     for (wallet of wallets) {
-        let tx = await client.spendTx({
-            senderId: senderAddress,
-            recipientId: wallet,
-            amount: amount,
-            nonce: nonce
-        })
-        let params = TxBuilder.unpackTx(tx).tx
-        let signedTx = await client.signTransaction(tx)
-
-        transactions.push(signedTx)
-        totalCost += (Number(params.fee) + Number(params.amount))
-        nonce++
+        let result = await client.spend(amount, wallet)
+        logger.info(`Send to wallet ${wallet} result: %o`, result)
     }
-    logger.info(`WORKER-${workerId}: Total cost of sending ${wallets.length} spend transaction(s) is ${totalCost}`)
-
-    if (totalCost > senderBalance) {
-        logger.error(`WORKER-${workerId}: Error while funding wallets. Insufficient balance on supervisor account. Ignoring job.`)
-        return
-    }
-
-    let jobs = []
-    for (t of transactions) {
-        jobs.push(
-            client.sendTransaction(t, { verify: false })
-        )
-    }
-
-    logger.info(`WORKER-${workerId}: Transaction(s) broadcasted. Waiting for status mined...`)
-    return Promise.all(jobs)
 }
 
 module.exports = { start, stop, autoFunderQueue, funderWallets }
