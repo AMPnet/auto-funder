@@ -34,17 +34,6 @@ async function initWorkers() {
     let keysCount = keys.length
     logger.info(`Loaded ${keysCount} worker wallets.`)
 
-    // await queue.onComplete(
-    //     autoFunderQueue,
-    //     {
-    //         teamSize: keysCount,
-    //         teamConcurrency: keysCount,
-    //         newJobCheckIntervalSeconds: 3
-    //     },
-    //     jobComplete
-    // )
-    // logger.info(`Initialized job complete handler.`)
-
     let aeNode = await Node({
         url: config.node.url,
         internalUrl: config.node.internal_url
@@ -141,27 +130,5 @@ async function handleJob(client, job, workerId) {
     logger.info(`WORKER-${workerId}: Transaction(s) broadcasted. Waiting for status mined...`)
     return Promise.all(jobs)
 }
-
-// async function jobComplete(job) {
-//     if (job.data.failed) {
-//         logger.error(`Job ${job.data.request.id} failed. Full output: %o`, job)
-//         return
-//     }
-
-//     let jobData = job.data.request.data
-//     if (jobData.originTxHash === undefined) {
-//         logger.info(`Job ${job.data.request.id} completed!`)
-//         return
-//     }
-
-//     logger.info(`Job ${job.data.request.id} completed!`)
-//     logger.info(`Updating origin transaction ${jobData.originTxHash} supervisor status to PROCESSED.`)
-//     return repo.update({
-//         hash: jobData.originTxHash,
-//         from_wallet: jobData.originTxFromWallet,
-//         to_wallet: jobData.originTxToWallet
-//     },
-//     { supervisor_status: enums.SupervisorStatus.PROCESSED })
-// }
 
 module.exports = { start, stop, autoFunderQueue, funderWallets }
