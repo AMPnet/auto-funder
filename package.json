@@ -18,7 +18,7 @@
   },
   "homepage": "https://github.com/AMPnet/auto-funder#readme",
   "dependencies": {
-    "@aeternity/aepp-sdk": "^7.7.0",
+    "@aeternity/aepp-sdk": "7.6.0",
     "express": "^4.17.1",
     "express-actuator": "^1.7.0",
     "from-exponential": "^1.0.0",
