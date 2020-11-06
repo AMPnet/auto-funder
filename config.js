@@ -10,6 +10,7 @@ config.queue_db = {
     password: valueOrDefault(process.env.QUEUE_DB_PASSWORD, "password"),
     archiveCompletedJobsEvery: '1 day',
     deleteArchivedJobsEvery: '7 days',
+    min: 0,
     max: Number(valueOrDefault(process.env.QUEUE_DB_MAX_POOL_SIZE, 1)),
     ssl: (valueOrDefault(process.env.QUEUE_DB_SSL, "false") === "true")
 }
