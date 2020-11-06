@@ -1,6 +1,9 @@
 const server = require('./http/server')
 const funder = require('./service/funder')
 
-funder.start(async () => {
-    server.start()
-})
+async function start() {
+    await server.start()
+    await funder.start()
+}
+
+start()

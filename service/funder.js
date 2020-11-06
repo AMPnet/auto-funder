@@ -68,7 +68,7 @@ async function initWorkers() {
                 return handleJob(client, job, id)
             }
         )
-        logger.info(`Initialized worker ${workerId}.`)
+        logger.info(`Initialized worker ${workerId} with wallet ${publicKey}.`)
         workerId++
     }
 }
@@ -88,12 +88,27 @@ async function handleJob(client, job, workerId) {
         return
     }
 
-    logger.info(`WORKER-${workerId}: Sending ${config.gift_amount} AE to wallets ${wallets}.`)
+    logger.info(`WORKER-${workerId}: Funding ${wallets.length} wallet(s)...`)
 
+    let results = []
     for (wallet of wallets) {
-        let result = await client.spend(amount, wallet)
+        logger.info(`WORKER-${workerId}: Sending ${config.gift_amount} to wallet ${wallet}`)
+        let [result, err] = await handle(client.spend(amount, wallet))
+        if (err) {
+            logger.warn(`WORKER-${workerId}: Error while sending funds to wallet ${wallet}: %o`, err)
+            throw new Error(err)
+        }
         logger.info(`Send to wallet ${wallet} result: %o`, result)
+        results.push(result)
     }
+
+    return results
+}
+
+const handle = (promise) => {
+    return promise
+      .then(data => ([data, undefined]))
+      .catch(error => Promise.resolve([undefined, error]));
 }
 
 module.exports = { start, stop, autoFunderQueue, funderWallets }
