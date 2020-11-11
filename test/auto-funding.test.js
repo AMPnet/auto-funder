@@ -15,8 +15,18 @@ describe('Auto funding test', function() {
         await funder.start()
         await httpServer.start()
 
-        serverQueue = new Bull(funder.autoFunderQueueServer)
-        clientQueue = new Bull(funder.autoFunderQueueClient)
+        serverQueue = new Bull(funder.autoFunderQueueServer, {
+            redis: {
+                host: config.redis.host,
+                port: config.redis.port
+            }
+        })
+        clientQueue = new Bull(funder.autoFunderQueueClient, {
+            redis: {
+                host: config.redis.host,
+                port: config.redis.port
+            }
+        })
         
         await serverQueue.empty()
         await clientQueue.empty()

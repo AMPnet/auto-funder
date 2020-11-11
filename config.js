@@ -9,6 +9,11 @@ config.node = {
     network_id: valueOrDefault(process.env.NETWORK_ID, "ae_docker")
 }
 
+config.redis = {
+    host: valueOrDefault(process.env.REDIS_HOST, '127.0.0.1'),
+    port: Number(valueOrDefault(process.env.REDIS_PORT, 6379))
+}
+
 config.funders = valueOrDefault(process.env.FUNDERS, "bb9f0b01c8c9553cfbaf7ef81a50f977b1326801ebf7294d1c2cbccdedf27476e9bbf604e611b5460a3b3999e9771b6f60417d73ce7c5519e12f7e127a1225ca")
 config.gift_amount = Number(valueOrDefault(process.env.GIFT_AMOUNT, 0.3))
 config.http_port = Number(valueOrDefault(process.env.HTTP_PORT, 8130))

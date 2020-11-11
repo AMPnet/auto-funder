@@ -32,8 +32,18 @@ async function stop() {
 }
 
 async function initQueue() {
-    serverQueue = new Bull(autoFunderQueueServer)
-    clientQueue = new Bull(autoFunderQueueClient)
+    serverQueue = new Bull(autoFunderQueueServer, {
+        redis: {
+            host: config.redis.host,
+            port: config.redis.port
+        }
+    })
+    clientQueue = new Bull(autoFunderQueueClient, {
+        redis: {
+            host: config.redis.host,
+            port: config.redis.port
+        }
+    })
 
     serverQueue.process(handleJob)
     serverQueue.on('failed', function(job, err) {
@@ -75,7 +85,12 @@ async function initWorkers() {
         })
         logger.info(`Loaded client`)
         let id = workerId.valueOf()
-        let workerQueue = new Bull(`worker-${id}`)
+        let workerQueue = new Bull(`worker-${id}`, {
+            redis: {
+                host: config.redis.host,
+                port: config.redis.port
+            }
+        })
         workerQueue.process(async (job) => {
             return handleWorkerJob(client, job, id)
         })
