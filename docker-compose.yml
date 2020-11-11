@@ -1,15 +1,7 @@
 version: '3'
 
 services:
-  db:
-    build:
-      context: ./db
-    image: ae-auto-funder-db
-    environment:
-      - POSTGRES_PASSWORD=postgres
-    ports:
-      - 5432:5432
-
+  
   ae-node:
     image: aeternity/aeternity:v5.5.4
     environment:
