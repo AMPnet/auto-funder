@@ -99,7 +99,7 @@ async function handleJob(job) {
     if (workerQueuesCount > 1) {
         let initialJobCounts = await workerQueues[0].getJobCounts() 
         let minJobsCount = initialJobCounts.waiting + initialJobCounts.active
-        for (i = 1; i < workerQueuesCount; i++) {
+        for (let i = 1; i < workerQueuesCount; i++) {
             let jobCounts = await workerQueues[i].getJobCounts()
             let jobsTotal = jobCounts.waiting + jobCounts.active
             if (jobsTotal < minJobsCount) {
@@ -134,7 +134,7 @@ async function handleWorkerJob(client, job, workerId) {
 
     let results = []
     let walletsCount = wallets.length
-    for (i = 0; i < walletsCount; ++i) {
+    for (let i = 0; i < walletsCount; ++i) {
         let wallet = wallets[i]
         logger.info(`WORKER-${workerId}: Sending ${config.gift_amount} to wallet ${wallet}`)
         let [result, err] = await handle(client.spend(amount, wallet))

@@ -35,6 +35,7 @@ describe('Auto funding test', function() {
         let wallet1 = Crypto.generateKeyPair()
         let wallet2 = Crypto.generateKeyPair()
         let wallet3 = Crypto.generateKeyPair()
+        let wallet4 = Crypto.generateKeyPair()
         let aeClient = await getAeClient()
         
         serverQueue.add({
@@ -45,7 +46,7 @@ describe('Auto funding test', function() {
         }).catch(err => { console.log("Error while publishing job: ", err) })
         
         serverQueue.add({
-            wallets: [ wallet3.publicKey ]
+            wallets: [ wallet3.publicKey, wallet4.publicKey ]
         }).then(job => {
             console.log(`Job ${job.id} published.`)
         }).catch(err => { console.log("Error while publishing job: ", err) })
@@ -55,16 +56,18 @@ describe('Auto funding test', function() {
             console.log(`Job data: `, job.data)
         })
 
-        await sleep(20000)
+        await sleep(15000)
 
         const giftAmount = aeUtil.toAettos(config.gift_amount)
         let wallet1Balance = await aeClient.balance(wallet1.publicKey)
         let wallet2Balance = await aeClient.balance(wallet2.publicKey)
         let wallet3Balance = await aeClient.balance(wallet3.publicKey)
+        let wallet4Balance = await aeClient.balance(wallet4.publicKey)
 
         assert.strictEqual(wallet1Balance, giftAmount)
         assert.strictEqual(wallet2Balance, giftAmount)
         assert.strictEqual(wallet3Balance, giftAmount)
+        assert.strictEqual(wallet4Balance, giftAmount)
 
         let funderBalancesUrl = `http://0.0.0.0:${config.http_port}/funders`
         let funderBalances = (await axios.get(funderBalancesUrl)).data
