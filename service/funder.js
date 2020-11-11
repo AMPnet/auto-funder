@@ -1,13 +1,16 @@
-const PgBoss = require('pg-boss')
-const { Universal, Keystore, Node, TxBuilder, MemoryAccount } = require('@aeternity/aepp-sdk')
+const Bull = require('bull')
+const { Universal, Keystore, Node, MemoryAccount } = require('@aeternity/aepp-sdk')
 
 const aeUtil = require('../util/ae')
 const config = require('../config')
 const logger = require('../logger')(module)
 
-const autoFunderQueue = "ampnet-auto-funder-queue"
+const autoFunderQueueServer = "ampnet-auto-funder-queue-server"
+const autoFunderQueueClient = "ampnet-auto-funder-queue-client"
 
-var queue
+var serverQueue
+var clientQueue
+var workerQueues = []
 var funderWallets = []
 
 async function start(onComplete) {
@@ -20,13 +23,26 @@ async function start(onComplete) {
 }
 
 async function stop() {
-    return queue.stop()
+    logger.info(`Stopping Funder service.`)
+    await serverQueue.close()
+    await clientQueue.close()
+    for (workerQueue of workerQueues) {
+        await workerQueue.close()
+    }
 }
 
 async function initQueue() {
-    queue = new PgBoss(config.queue_db)
-    await queue.start()
-    logger.info(`Queue initialized.`)
+    serverQueue = new Bull(autoFunderQueueServer)
+    clientQueue = new Bull(autoFunderQueueClient)
+
+    serverQueue.process(handleJob)
+    serverQueue.on('failed', function(job, err) {
+        logger.warn(`MASTER-QUEUE: Job ${job.id} failed with error: %o`, err)
+    })
+    serverQueue.on('error', function(err) {
+        logger.warn(`MASTER-QUEUE: Error occured %o`, err)
+    })
+    logger.info(`Queues initialized.`)
 }
 
 async function initWorkers() {
@@ -38,6 +54,7 @@ async function initWorkers() {
         url: config.node.url,
         internalUrl: config.node.internal_url
     })
+    logger.info(`Loaded node`)
     let workerId = 1
     for (secretKey of keys) {
         let publicKey = Keystore.getAddressFromPriv(secretKey)
@@ -56,24 +73,49 @@ async function initWorkers() {
             address: publicKey,
             networkId: config.node.network_id
         })
+        logger.info(`Loaded client`)
         let id = workerId.valueOf()
-        await queue.subscribe(
-            autoFunderQueue,
-            {
-                teamSize: 1,
-                teamConcurrency: 1,
-                newJobCheckIntervalSeconds: 2
-            },
-            async (job) => {
-                return handleJob(client, job, id)
-            }
-        )
+        let workerQueue = new Bull(`worker-${id}`)
+        workerQueue.process(async (job) => {
+            return handleWorkerJob(client, job, id)
+        })
+        workerQueue.on('completed', handleWorkerJobComplete)
+        workerQueue.on('error', function(err) {
+            logger.warn(`Worker queue error: %o`, err)
+        })
+        workerQueue.on('failed', function(job, err) {
+            logger.warn(`Job ${job.id} failed. Error log: %o`, err)
+        })
         logger.info(`Initialized worker ${workerId} with wallet ${publicKey}.`)
         workerId++
+        workerQueues.push(workerQueue)
     }
 }
 
-async function handleJob(client, job, workerId) {
+async function handleJob(job) {
+    logger.info(`MASTER-QUEUE: Processing job ${job.id}`)
+    let workerQueueId = 0
+    let workerQueuesCount = workerQueues.length
+    if (workerQueuesCount > 1) {
+        let initialJobCounts = await workerQueues[0].getJobCounts() 
+        let minJobsCount = initialJobCounts.waiting + initialJobCounts.active
+        for (i = 1; i < workerQueuesCount; i++) {
+            let jobCounts = await workerQueues[i].getJobCounts()
+            let jobsTotal = jobCounts.waiting + jobCounts.active
+            if (jobsTotal < minJobsCount) {
+                minJobsCount = jobsTotal
+                workerQueueId = i.valueOf()
+            }
+        }
+    }
+    workerQueues[workerQueueId].add(job.data).then(result => {
+        logger.info(`MASTER-QUEUE: Forwarded job ${job.id} to WORKER-${workerQueueId + 1} queue. Forwarded job id: ${result.id}`)
+    }).catch(err => {
+        logger.warn(`MASTER-QUEUE: Error while forwarding job ${job.id} to WORKER-${workerQueueId + 1} queue: %o`, err)
+    })
+}
+
+async function handleWorkerJob(client, job, workerId) {
     logger.info(`WORKER-${workerId}: Processing job with id ${job.id}`)
     
     let wallets = job.data.wallets
@@ -88,21 +130,32 @@ async function handleJob(client, job, workerId) {
         return
     }
 
-    logger.info(`WORKER-${workerId}: Funding ${wallets.length} wallet(s)...`)
+    logger.info(`WORKER-${workerId}: Funding ${wallets.length} wallet(s) ${wallets}`)
 
     let results = []
-    for (wallet of wallets) {
+    let walletsCount = wallets.length
+    for (i = 0; i < walletsCount; ++i) {
+        let wallet = wallets[i]
         logger.info(`WORKER-${workerId}: Sending ${config.gift_amount} to wallet ${wallet}`)
         let [result, err] = await handle(client.spend(amount, wallet))
         if (err) {
             logger.warn(`WORKER-${workerId}: Error while sending funds to wallet ${wallet}: %o`, err)
             throw new Error(err)
         }
-        logger.info(`Send to wallet ${wallet} result: %o`, result)
+        logger.info(`WORKER-${workerId}: Send to wallet ${wallet} result: %o`, result)
         results.push(result)
     }
 
     return results
+}
+
+async function handleWorkerJobComplete(job) {
+    logger.info(`Job ${job.id} complete!`)
+    clientQueue.add(job.data).then(result => {
+        logger.info(`Forwarded completed job ${job.id} to client queue. New job id ${result.id}`)
+    }).catch(err => {
+        logger.warn(`Error while forwarding job ${job.id} to client queue: %o`, err)
+    })
 }
 
 const handle = (promise) => {
@@ -111,4 +164,4 @@ const handle = (promise) => {
       .catch(error => Promise.resolve([undefined, error]));
 }
 
-module.exports = { start, stop, autoFunderQueue, funderWallets }
+module.exports = { start, autoFunderQueueServer, autoFunderQueueClient, funderWallets, workerQueues, stop }

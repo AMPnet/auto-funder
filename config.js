@@ -2,19 +2,6 @@ const enums = require('./enums')
 
 var config = {}
 
-config.queue_db = {
-    host: valueOrDefault(process.env.QUEUE_DB_HOST, "localhost"),
-    port: valueOrDefault(process.env.QUEUE_DB_PORT, "5432"),
-    database: valueOrDefault(process.env.QUEUE_DB_NAME, "ae_middleware_local_queue"),
-    user: valueOrDefault(process.env.QUEUE_DB_USER, "ae_middleware_local_queue"),
-    password: valueOrDefault(process.env.QUEUE_DB_PASSWORD, "password"),
-    archiveCompletedJobsEvery: '1 day',
-    deleteArchivedJobsEvery: '7 days',
-    min: 0,
-    max: Number(valueOrDefault(process.env.QUEUE_DB_MAX_POOL_SIZE, 1)),
-    ssl: (valueOrDefault(process.env.QUEUE_DB_SSL, "false") === "true")
-}
-
 config.node = {
     url: valueOrDefault(process.env.NODE_URL, "http://localhost:3013/"),
     internal_url: valueOrDefault(process.env.NODE_INTERNAL_URL, "http://localhost:3113/"),

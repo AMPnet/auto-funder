@@ -27,3 +27,8 @@ services:
     image: aeternity/aesophia_http:v4.3.2
     ports:
        - "3080:3080"
+
+  redis:
+    image: redis
+    ports:
+      - 6379:6379

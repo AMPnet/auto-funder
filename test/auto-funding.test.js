@@ -1,5 +1,5 @@
 const { Crypto, Node, Universal, MemoryAccount } = require("@aeternity/aepp-sdk")
-const PgBoss = require('pg-boss')
+const Bull = require('bull')
 const axios = require('axios')
 const chai = require('chai')
 const assert = chai.assert
@@ -14,6 +14,15 @@ describe('Auto funding test', function() {
     beforeEach(async() => {
         await funder.start()
         await httpServer.start()
+
+        serverQueue = new Bull(funder.autoFunderQueueServer)
+        clientQueue = new Bull(funder.autoFunderQueueClient)
+        
+        await serverQueue.empty()
+        await clientQueue.empty()
+        for (workerQueue of funder.workerQueues) {
+            await workerQueue.empty()
+        }
     })
 
     afterEach(async() => {
@@ -22,30 +31,31 @@ describe('Auto funding test', function() {
     })
 
     it("should fund wallets provided in job request and update state of origin tx if required", async () => {
-        let queue = new PgBoss(config.queue_db)        
-        let queueName = funder.autoFunderQueue
-        
+
         let wallet1 = Crypto.generateKeyPair()
         let wallet2 = Crypto.generateKeyPair()
         let wallet3 = Crypto.generateKeyPair()
         let aeClient = await getAeClient()
-
-        await queue.start()
-        await queue.clearStorage()
         
-        queue.publish(queueName, {
-            wallets: [ wallet1.publicKey, wallet2.publicKey ]
-        }).then(jobId => {
-            console.log(`Job ${jobId} published.`)
+        serverQueue.add({
+            wallets: [ wallet1.publicKey, wallet2.publicKey ],
+            originTxHash: "xyz"
+        }).then(job => {
+            console.log(`Job ${job.id} published.`)
         }).catch(err => { console.log("Error while publishing job: ", err) })
         
-        queue.publish(queueName, {
+        serverQueue.add({
             wallets: [ wallet3.publicKey ]
-        }).then(jobId => {
-            console.log(`Job ${jobId} published.`)
+        }).then(job => {
+            console.log(`Job ${job.id} published.`)
         }).catch(err => { console.log("Error while publishing job: ", err) })
 
-        await sleep(10000)
+        clientQueue.process(async function (job) {
+            console.log(`Job ${job.id} completed.`)
+            console.log(`Job data: `, job.data)
+        })
+
+        await sleep(20000)
 
         const giftAmount = aeUtil.toAettos(config.gift_amount)
         let wallet1Balance = await aeClient.balance(wallet1.publicKey)
@@ -56,15 +66,15 @@ describe('Auto funding test', function() {
         assert.strictEqual(wallet2Balance, giftAmount)
         assert.strictEqual(wallet3Balance, giftAmount)
 
-        await queue.stop()
-
         let funderBalancesUrl = `http://0.0.0.0:${config.http_port}/funders`
         let funderBalances = (await axios.get(funderBalancesUrl)).data
         for (wallet of funder.funderWallets) {
             assert.isTrue(funderBalances.hasOwnProperty(wallet))
         }
-    })
 
+        await serverQueue.close()
+        await clientQueue.close()
+    })
 })
 
 function sleep(ms) {
