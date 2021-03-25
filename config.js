@@ -18,6 +18,7 @@ config.funders = valueOrDefault(process.env.FUNDERS, "bb9f0b01c8c9553cfbaf7ef81a
 config.gift_amount = Number(valueOrDefault(process.env.GIFT_AMOUNT, 0.3))
 config.http_port = Number(valueOrDefault(process.env.HTTP_PORT, 8130))
 config.env = valueOrDefault(process.env.ENV, enums.ServiceEnv.DEV)
+config.confirmations = Number(valueOrDefault(process.env.CONFIRMATIONS, 0))
 
 function valueOrDefault(value, defaultValue) {
     return (value !== undefined) ? value : defaultValue

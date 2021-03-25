@@ -3,7 +3,7 @@ version: '3'
 services:
   
   ae-node:
-    image: aeternity/aeternity:v5.5.4
+    image: aeternity/aeternity:v5.10.1
     environment:
       AETERNITY_CONFIG: /home/aeternity/aeternity.yaml
     volumes:

@@ -86,6 +86,9 @@ async function initWorkers() {
         logger.info(`Loaded client`)
         let id = workerId.valueOf()
         let workerQueue = new Bull(`worker-${id}`, {
+            settings: {
+                lockDuration: 600000
+            },
             redis: {
                 host: config.redis.host,
                 port: config.redis.port
@@ -149,19 +152,30 @@ async function handleWorkerJob(client, job, workerId) {
 
     let results = []
     let walletsCount = wallets.length
+    let spenderAddress = await client.address()
+    let spenderNonce = await client.getAccountNonce(spenderAddress)
+    let txCounter = 0
     for (let i = 0; i < walletsCount; ++i) {
         let wallet = wallets[i]
+        let walletBalance = await client.getBalance(wallet)
+        if (walletBalance >= amount) {
+            logger.info(`WORKER-${workerId}: Skipping wallet ${wallet}. Already funded.`)
+            continue
+        }
         logger.info(`WORKER-${workerId}: Sending ${config.gift_amount} to wallet ${wallet}`)
-        let [result, err] = await handle(client.spend(amount, wallet))
+        let [result, err] = await handle(client.spend(amount, wallet, {
+            nonce: spenderNonce + txCounter
+        }))
         if (err) {
             logger.warn(`WORKER-${workerId}: Error while sending funds to wallet ${wallet}: %o`, err)
             throw new Error(err)
         }
         logger.info(`WORKER-${workerId}: Send to wallet ${wallet} result: %o`, result)
-        results.push(result)
+        results.push(aeUtil.waitForTxConfirm(result.hash, client))
+        txCounter += 1
     }
 
-    return results
+    return Promise.all(results)
 }
 
 async function handleWorkerJobComplete(job) {

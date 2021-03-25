@@ -24,7 +24,9 @@ function getFilenameLabel(callingModule) {
 
 function getTransports() {
     let loggerTransports = [
-        new transports.Console()
+        new transports.Console({
+            level: 'info',
+        })
     ]
     if (config.env === enums.ServiceEnv.PROD) {
         loggerTransports.push(new DailyRotateFile({
@@ -33,7 +35,17 @@ function getTransports() {
             datePattern: 'YYYY-MM-DD',
             zippedArchive: true,
             maxSize: '20m',
-            maxFiles: '7d'
+            maxFiles: '7d',
+            level: 'info'
+        }))
+        loggerTransports.push(new DailyRotateFile({
+            filename: 'auto-funder-%DATE%-DEBUG.log',
+            dirname: '/var/log',
+            datePattern: 'YYYY-MM-DD',
+            zippedArchive: true,
+            maxSize: '20m',
+            maxFiles: '7d',
+            level: 'debug'
         }))
     }
     return loggerTransports

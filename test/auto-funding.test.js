@@ -65,7 +65,7 @@ describe('Auto funding test', function() {
             console.log(`Job ${job.id} completed.`)
             console.log(`Job data: `, job.data)
         })
-
+        
         await sleep(15000)
 
         const giftAmount = aeUtil.toAettos(config.gift_amount)
