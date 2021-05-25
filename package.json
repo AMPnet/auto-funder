@@ -18,7 +18,7 @@
   },
   "homepage": "https://github.com/AMPnet/auto-funder#readme",
   "dependencies": {
-    "@aeternity/aepp-sdk": "7.6.0",
+    "@aeternity/aepp-sdk": "^8.0.0",
     "bull": "^3.18.1",
     "express": "^4.17.1",
     "express-actuator": "^1.7.0",
@@ -28,7 +28,7 @@
     "winston-daily-rotate-file": "^4.5.0"
   },
   "devDependencies": {
-    "axios": "^0.21.0",
+    "axios": "^0.21.1",
     "chai": "^4.2.0",
     "mocha": "^8.2.1"
   }
