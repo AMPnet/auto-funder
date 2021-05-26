@@ -3,10 +3,10 @@ const enums = require('./enums')
 var config = {}
 
 config.node = {
-    url: valueOrDefault(process.env.NODE_URL, "http://localhost:3013/"),
-    internal_url: valueOrDefault(process.env.NODE_INTERNAL_URL, "http://localhost:3113/"),
+    url: valueOrDefault(process.env.NODE_URL, "http://165.22.92.53:3013/"),
+    internal_url: valueOrDefault(process.env.NODE_INTERNAL_URL, "http://165.22.92.53:3113/"),
     compiler_url: valueOrDefault(process.env.COMPILER_URL, "http://localhost:3080"),
-    network_id: valueOrDefault(process.env.NETWORK_ID, "ae_docker")
+    network_id: valueOrDefault(process.env.NETWORK_ID, "ampnet_private_network")
 }
 
 config.redis = {
